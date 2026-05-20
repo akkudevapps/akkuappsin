@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "*": "ask",
+    "edit": {
+      "*": "ask",
+      "C:\\projects\\pc\\git2\\akkuappsin\\**": "allow",
+      "*.md": "allow"
+    },
+    "external_directory": {
+      "C:\\projects\\pc\\git2\\akkuappsin\\**": "allow"
+    }
+  }
+}

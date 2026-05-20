@@ -299,4 +299,188 @@ if (!function_exists('akkuTableColumns')) {
         $id = $article['blog_id'] ?? $article['id'] ?? $article['news_id'] ?? $article['article_id'] ?? '';
         return '/news/article.php?id=' . urlencode((string) $id);
     }
+
+    function akkuNewsGetFileSubfolder(string $extension): string
+    {
+        $mapping = [
+            'jpg' => 'images', 'jpeg' => 'images', 'png' => 'images',
+            'gif' => 'images', 'webp' => 'images', 'svg' => 'images', 'avif' => 'images',
+            'pdf' => 'documents', 'doc' => 'documents', 'docx' => 'documents',
+            'txt' => 'documents', 'xls' => 'documents', 'xlsx' => 'documents',
+            'ppt' => 'documents', 'pptx' => 'documents', 'odt' => 'documents',
+            'mp3' => 'audio', 'wav' => 'audio', 'ogg' => 'audio', 'm4a' => 'audio', 'flac' => 'audio',
+            'mp4' => 'videos', 'webm' => 'videos', 'avi' => 'videos', 'mov' => 'videos', 'mkv' => 'videos',
+            'zip' => 'files', 'rar' => 'files', '7z' => 'files', 'tar' => 'files', 'gz' => 'files',
+        ];
+        return $mapping[strtolower($extension)] ?? 'files';
+    }
+
+    function akkuNewsUploadFile(array $file, string $articleFolder, string $baseDir): array
+    {
+        $maxSize = 10 * 1024 * 1024;
+        $allowedExtensions = [
+            'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif',
+            'pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'odt',
+            'mp3', 'wav', 'ogg', 'm4a', 'flac',
+            'mp4', 'webm', 'avi', 'mov', 'mkv',
+            'zip', 'rar', '7z', 'tar', 'gz',
+        ];
+
+        if ($file['size'] > $maxSize) {
+            return ['error' => 'File size exceeds 10MB limit.'];
+        }
+
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowedExtensions, true)) {
+            return ['error' => 'File type not allowed.'];
+        }
+
+        $subfolder = akkuNewsGetFileSubfolder($ext);
+        $uploadDir = rtrim($baseDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $articleFolder . DIRECTORY_SEPARATOR . $subfolder;
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $filename = uniqid('file_', true) . '.' . $ext;
+        $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            return ['error' => 'Failed to upload file.'];
+        }
+
+        $publicUrl = '/uploads/newsroom/' . $articleFolder . '/' . $subfolder . '/' . $filename;
+
+        return [
+            'url' => $publicUrl,
+            'filename' => $file['name'],
+            'type' => $subfolder,
+            'size' => $file['size'],
+            'extension' => $ext,
+        ];
+    }
+
+    function akkuNewsSanitizeHTML(string $html): string
+    {
+        $allowed = '<p><h1><h2><h3><h4><h5><h6><strong><b><em><i><u><s><br><hr><ul><ol><li><blockquote><pre><code><a><img><table><thead><tbody><tr><th><td><div><span><details><summary><abbr><sub><sup><ins><del><mark>';
+        $html = strip_tags($html, $allowed);
+        $html = preg_replace('/\s+on\w+\s*=\s*["\'][^"\']*["\']/', '', $html);
+        $html = preg_replace('/\s+on\w+\s*=\s*\S+/', '', $html);
+        $html = preg_replace('/href\s*=\s*["\']\s*(javascript|data)\s*:[^"\']*["\']/i', 'href="#"', $html);
+        $html = preg_replace('/src\s*=\s*["\']\s*(javascript|data)\s*:[^"\']*["\']/i', 'src=""', $html);
+        return $html;
+    }
+
+    function akkuNewsHighlightCode(string $code, string $lang): string
+    {
+        $lang = strtolower(trim($lang));
+        $code = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
+
+        $tokens = [];
+        $idx = 0;
+        $wrap = function (string $type, string $match) use (&$tokens, &$idx): string {
+            $key = "\x00T$idx\x00";
+            $tokens[$key] = '<span class="token-' . $type . '">' . $match . '</span>';
+            $idx++;
+            return $key;
+        };
+
+        $keywords = [
+            'python' => '\b(def|class|if|elif|else|for|while|return|import|from|as|try|except|finally|with|yield|lambda|True|False|None|self|raise|pass|break|continue|and|or|not|in|is|global|nonlocal|assert|del)\b',
+            'csharp' => '\b(using|namespace|class|public|private|protected|internal|static|void|int|string|bool|var|if|else|for|foreach|while|do|switch|case|break|continue|return|new|this|base|override|virtual|abstract|sealed|async|await|try|catch|finally|throw|true|false|null|const|readonly|enum|struct|interface|partial|where|select|from|in|let|join|on|equals|into|group|by|orderby|descending|ascending|yield|operator|implicit|explicit|params|ref|out|is|as|typeof|nameof|sizeof)\b',
+            'css' => '\b(@media|@keyframes|@import|@font-face|@charset|@supports|@page|!important|inherit|initial|unset|none|auto|block|inline|flex|grid|absolute|relative|fixed|sticky|solid|dashed|dotted|hidden|visible|scroll|center|left|right|top|bottom|both|ease|linear|ease-in|ease-out|ease-in-out|forwards|backwards|alternate|running|paused|normal|reverse|italic|bold|bolder|lighter|small-caps|capitalize|uppercase|lowercase|nowrap|pre|pre-wrap|pre-line|break-word|border-box|content-box|cover|contain|repeat|no-repeat|space|round)\b',
+            'php' => '\b(function|class|public|private|protected|static|abstract|final|interface|trait|namespace|use|if|elseif|else|for|foreach|while|do|switch|case|break|continue|return|echo|print|require|require_once|include|include_once|new|this|self|parent|extends|implements|instanceof|try|catch|finally|throw|true|false|null|var|const|global|isset|unset|empty|die|exit|yield|from|as|and|or|xor|clone|declare|fn|match|readonly|enum)\b',
+            'xaml' => '\b(x:Type|x:Static|x:Null|x:True|x:False|Binding|StaticResource|DynamicResource|TemplateBinding|RelativeSource|MultiBinding|PriorityBinding|DataTrigger|MultiDataTrigger|EventTrigger|StyleSetter|ControlTemplate|DataTemplate|HierarchicalDataTemplate|ItemsPanelTemplate)\b',
+            'cshtml' => '\b(model|if|else|foreach|for|while|switch|case|break|continue|return|try|catch|finally|throw|using|var|new|true|false|null|this|base|lock|typeof|nameof|async|await|yield|dynamic|is|as|in|from|where|select|orderby|group|join|let|into|on|equals|by|ascending|descending)\b',
+            'js' => '\b(const|let|var|function|class|if|else|for|while|do|switch|case|break|continue|return|new|this|super|extends|implements|interface|abstract|enum|typeof|instanceof|in|of|import|export|from|default|async|await|yield|try|catch|finally|throw|true|false|null|undefined|NaN|Infinity|void|delete|static|get|set|constructor|extends|super|symbol)\b',
+            'c' => '\b(int|void|char|float|double|long|short|unsigned|signed|const|volatile|static|extern|auto|register|struct|union|enum|typedef|sizeof|if|else|for|while|do|switch|case|break|continue|return|goto|default|NULL|true|false|define|include|ifdef|ifndef|endif|elif|undef|pragma|error|line)\b',
+        ];
+
+        if (isset($keywords[$lang])) {
+            $code = preg_replace_callback('/(' . $keywords[$lang] . ')/', function ($m) use ($wrap) {
+                return $wrap('keyword', $m[0]);
+            }, $code);
+        }
+
+        $stringPatterns = [
+            'python' => ['/(f?"[^"]*")/', "/(f?'[^']*')/", '/("""[\s\S]*?""")/', "/('''[\s\S]*?''')/"],
+            'csharp' => ['/(@"[^"]*")/', '/("[^"]*")/', "/('[^']*')/"],
+            'css' => ['/(#[0-9a-fA-F]{3,8})\b/', '/("[^"]*")/', "/('[^']*')/"],
+            'php' => ['/(b?"[^"]*")/', "/(b?'[^']*')/"],
+            'xaml' => ['/(#[0-9a-fA-F]{3,8})\b/', '/("[^"]*")/'],
+            'cshtml' => ['/(#[0-9a-fA-F]{3,8})\b/', '/("[^"]*")/', "/('[^']*')/"],
+            'js' => ['/(`[\s\S]*?`)/', '/("[^"]*")/', "/('[^']*')/"],
+            'c' => ['/(#[^\n]*)/', '/("[^"]*")/', "/('[^']*')/"],
+        ];
+
+        if (isset($stringPatterns[$lang])) {
+            foreach ($stringPatterns[$lang] as $p) {
+                $code = preg_replace_callback($p, function ($m) use ($wrap) {
+                    return $wrap('string', $m[0]);
+                }, $code);
+            }
+        }
+
+        $numberPatterns = [
+            'python' => '/\b(\d+\.?\d*(?:e[+-]?\d+)?)\b/i',
+            'csharp' => '/\b(\d+\.?\d*(?:f|d|m|l|ul)?)\b/i',
+            'css' => '/\b(\d+\.?\d*)(px|em|rem|%|vh|vw|deg|rad|turn|s|ms|fr)?\b/i',
+            'php' => '/\b(\d+\.?\d*(?:e[+-]?\d+)?)\b/i',
+            'xaml' => '/\b(\d+\.?\d*)\b/',
+            'cshtml' => '/\b(\d+\.?\d*(?:e[+-]?\d+)?)\b/i',
+            'js' => '/\b(\d+\.?\d*(?:e[+-]?\d+)?)\b/i',
+            'c' => '/\b(\d+\.?\d*(?:f|l|ul|ll)?)\b/i',
+        ];
+
+        if (isset($numberPatterns[$lang])) {
+            $code = preg_replace_callback($numberPatterns[$lang], function ($m) use ($wrap) {
+                return $wrap('number', $m[0]);
+            }, $code);
+        }
+
+        $code = preg_replace_callback('/\b([a-zA-Z_]\w*)\s*(?=\()/i', function ($m) use ($wrap) {
+            return $wrap('function', $m[0]);
+        }, $code);
+
+        if (in_array($lang, ['xaml', 'cshtml'], true)) {
+            $code = preg_replace_callback('/(<\/?)([\w:.]+)/', function ($m) use ($wrap) {
+                return $m[1] . $wrap('tag', $m[2]);
+            }, $code);
+            $code = preg_replace_callback('/\s([\w:.]+)(?==)/', function ($m) use ($wrap) {
+                return ' ' . $wrap('attribute', $m[1]);
+            }, $code);
+        }
+
+        if ($lang === 'php') {
+            $code = preg_replace_callback('/(\$[\w]+)/', function ($m) use ($wrap) {
+                return $wrap('variable', $m[0]);
+            }, $code);
+        }
+
+        $code = preg_replace_callback('/(=>|===|!==|==|!=|<=|>=|&&|\|\||\?\?|\?\.\.\.|\.\.\.|\+\+|--|[+\-*/%=<>!&|^~])/', function ($m) use ($wrap) {
+            return $wrap('operator', $m[0]);
+        }, $code);
+
+        $commentPatterns = [
+            'python' => '/(#.*$)/m',
+            'csharp' => '/(\/\/.*$)/m',
+            'css' => '/(\/\*[\s\S]*?\*\/)/',
+            'php' => '/(\/\/.*$|\/\*[\s\S]*?\*\/|#.*$)/m',
+            'xaml' => '/(<!--[\s\S]*?-->)/',
+            'cshtml' => '/(\/\/.*$|\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->)/m',
+            'js' => '/(\/\/.*$|\/\*[\s\S]*?\*\/)/m',
+            'c' => '/(\/\/.*$|\/\*[\s\S]*?\*\/)/m',
+        ];
+
+        if (isset($commentPatterns[$lang])) {
+            $code = preg_replace_callback($commentPatterns[$lang], function ($m) use ($wrap) {
+                return $wrap('comment', $m[0]);
+            }, $code);
+        }
+
+        foreach ($tokens as $k => $v) {
+            $code = str_replace($k, $v, $code);
+        }
+
+        return $code;
+    }
 }

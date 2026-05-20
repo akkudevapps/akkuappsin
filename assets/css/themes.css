@@ -1806,3 +1806,27 @@ td {
     break-inside: avoid;
   }
 }
+
+/* ============================================================
+   NEWS EDITOR & SYNTAX HIGHLIGHTING
+   ============================================================ */
+
+.token-keyword { color: #c678dd; }
+.token-string { color: #98c379; }
+.token-number { color: #d19a66; }
+.token-comment { color: #5c6370; font-style: italic; }
+.token-function { color: #61afef; }
+.token-tag { color: #e06c75; }
+.token-attribute { color: #d19a66; }
+.token-operator { color: #56b6c2; }
+.token-variable { color: #e06c75; }
+
+[data-theme="light"] .token-keyword { color: #7c3aed; }
+[data-theme="light"] .token-string { color: #059669; }
+[data-theme="light"] .token-number { color: #d97706; }
+[data-theme="light"] .token-comment { color: #6b7280; }
+[data-theme="light"] .token-function { color: #2563eb; }
+[data-theme="light"] .token-tag { color: #dc2626; }
+[data-theme="light"] .token-attribute { color: #d97706; }
+[data-theme="light"] .token-operator { color: #0891b2; }
+[data-theme="light"] .token-variable { color: #dc2626; }

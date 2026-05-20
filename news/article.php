@@ -126,11 +126,31 @@ if (!$article) {
 $articleDate = akkuNewsArticleDate($article);
 $articleType = ucfirst(akkuNewsArticleType($article));
 $readingMinutes = akkuNewsReadingMinutes((string) ($article['content'] ?? ''));
-$contentBlocks = preg_split("/\r\n\r\n|\n\n|\r\r/", trim((string) ($article['content'] ?? '')));
-$contentBlocks = array_values(array_filter(array_map('trim', is_array($contentBlocks) ? $contentBlocks : [])));
-if (empty($contentBlocks)) {
-    $contentBlocks = [trim((string) ($article['content'] ?? ''))];
+
+$allowedHtmlTags = '<p><h1><h2><h3><h4><h5><h6><strong><b><em><i><u><s><br><hr><ul><ol><li><blockquote><pre><code><a><img><table><thead><tbody><tr><th><td><div><span><details><summary><abbr><sub><sup><ins><del><mark>';
+$rawContent = (string) ($article['content'] ?? '');
+$sanitizedContent = akkuNewsSanitizeHTML($rawContent);
+
+$tocItems = [];
+preg_match_all('/<h([1-4])[^>]*>(.*?)<\/h\1>/', $sanitizedContent, $headingMatches, PREG_SET_ORDER);
+foreach ($headingMatches as $i => $match) {
+    $level = (int) $match[1];
+    $text = strip_tags($match[2]);
+    $id = 'section-' . akkuNewsSlugify($text) . ($i > 0 ? '-' . $i : '');
+    $tocItems[] = ['level' => $level, 'text' => $text, 'id' => $id];
+    $sanitizedContent = preg_replace(
+        '/<h' . $level . '([^>]*)>' . preg_quote($match[2], '/') . '<\/h' . $level . '>/',
+        '<h' . $level . ' id="' . $id . '"$1>' . $match[2] . '</h' . $level . '>',
+        $sanitizedContent,
+        1
+    );
 }
+
+$sanitizedContent = preg_replace_callback(
+    '/<pre\s+class="code-block"\s+data-lang="([^"]*)">\s*<code>([\s\S]*?)<\/code>\s*<\/pre>/',
+    function($m) { return '<pre class="code-block" data-lang="' . $m[1] . '"><code>' . akkuNewsHighlightCode($m[2], $m[1]) . '</code></pre>'; },
+    $sanitizedContent
+);
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -296,6 +316,22 @@ if (empty($contentBlocks)) {
                 padding-right: 1rem;
             }
         }
+        @media (max-width: 1100px) {
+            .article-shell { grid-template-columns: 1fr; }
+            .article-rail { position: static; }
+        }
+        @media (max-width: 768px) {
+            .article-shell { grid-template-columns: 1fr; }
+            .article-rail { position: static; }
+            .article-header, .article-copy, .article-reference-grid, .article-actions { padding-left: 1rem; padding-right: 1rem; }
+            .article-title { font-size: clamp(1.4rem, 5vw, 2rem); }
+            .article-toc { position: static; margin-bottom: 1rem; }
+            .article-body pre.code-block { font-size: .78rem; padding: .75rem; }
+            .article-body pre.code-block::before { font-size: .6rem; }
+            .article-body h1 { font-size: 1.5rem; }
+            .article-body h2 { font-size: 1.3rem; }
+            .article-body h3 { font-size: 1.15rem; }
+        }
     </style>
 </head>
 <body>
@@ -340,18 +376,8 @@ if (empty($contentBlocks)) {
                         </div>
                     </div>
 
-                    <div class="article-copy">
-                        <?php foreach ($contentBlocks as $index => $block): ?>
-                            <p class="article-paragraph"><?= nl2br(htmlspecialchars($block)) ?></p>
-                            <?php if ($index === 0 && isset($promoBlocks[1])): ?>
-                                <div class="article-inline-promo">
-                                    <span class="news-eyebrow"><?= htmlspecialchars($promoBlocks[1]['eyebrow']) ?></span>
-                                    <h3><?= htmlspecialchars($promoBlocks[1]['title']) ?></h3>
-                                    <p><?= htmlspecialchars($promoBlocks[1]['copy']) ?></p>
-                                    <div style="margin-top:.8rem;"><a class="btn btn-primary btn-sm" href="<?= htmlspecialchars($promoBlocks[1]['cta_href']) ?>"><?= htmlspecialchars($promoBlocks[1]['cta_label']) ?></a></div>
-                                </div>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
+                    <div class="article-copy article-body">
+                        <?= $sanitizedContent ?>
 
                         <?php if (isset($promoBlocks[0])): ?>
                             <div class="article-inline-promo">
@@ -402,6 +428,19 @@ if (empty($contentBlocks)) {
                 </article>
 
                 <aside class="article-rail">
+                    <?php if (!empty($tocItems)): ?>
+                        <nav class="article-toc">
+                            <h4><i class="fas fa-list"></i> Table of Contents</h4>
+                            <ul>
+                                <?php foreach ($tocItems as $toc): ?>
+                                    <li style="<?= $toc['level'] > 1 ? 'margin-left:' . (($toc['level']-1)*12) . 'px;' : '' ?>">
+                                        <a href="#<?= $toc['id'] ?>"><?= htmlspecialchars($toc['text']) ?></a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </nav>
+                    <?php endif; ?>
+
                     <?php if (!empty($popularArticles)): ?>
                         <div class="article-list-card">
                             <div class="article-rail-card" style="border:none; box-shadow:none; padding-bottom:.4rem;">
