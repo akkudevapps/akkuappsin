@@ -3,6 +3,7 @@ define('AKKUAPPS_LOADED', true);
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/news-engine.php';
+require_once '../includes/ad-engine.php';
 
 $id = trim((string) ($_GET['id'] ?? ''));
 $slug = trim((string) ($_GET['slug'] ?? ''));
@@ -11,6 +12,51 @@ $relatedArticles = [];
 $popularArticles = [];
 $categoryArticles = [];
 $promoBlocks = akkuNewsPromoBlocks();
+
+// Get user location and language for ad targeting
+$userLocation = akkuAdGetUserLocationAndLanguage();
+$userRegion = $userLocation['region'] ?? null;
+$userLanguage = $userLocation['language'] ?? 'en';
+
+function displayArticleAd($adSizeId = null, $userRegion = null, $userLanguage = 'en')
+{
+    global $pdo;
+    $ad = akkuAdGetActiveAds($pdo, null, $adSizeId, $userRegion, $userLanguage);
+    if (empty($ad)) {
+        return '<div class="news-empty-ad"><i class="fas fa-megaphone"></i> <p style="margin: 0;">Advertisement</p></div>';
+    }
+    $ad = $ad[0];
+    ob_start();
+    ?>
+    <div class="news-ad-wrapper" data-ad-id="<?= htmlspecialchars($ad['id']) ?>" style="position: relative;">
+        <?php if ($ad['ad_type'] === 'image' && !empty($ad['image_url'])): ?>
+            <a href="<?= htmlspecialchars($ad['click_url'] ?? '#') ?>" target="_blank" rel="noopener" onclick="trackAdClick('<?= $ad['id'] ?>')">
+                <img src="<?= htmlspecialchars($ad['image_url']) ?>" alt="<?= htmlspecialchars($ad['title']) ?>" style="width:100%;height:auto;display:block;" loading="lazy">
+            </a>
+        <?php elseif ($ad['ad_type'] === 'text'): ?>
+            <div style="padding:1rem;">
+                <h4 style="margin:0 0 .5rem 0;color:var(--text-primary);"><?= htmlspecialchars($ad['title']) ?></h4>
+                <p style="margin:0 0 .75rem 0;color:var(--text-secondary);font-size:.9rem;"><?= htmlspecialchars($ad['description']) ?></p>
+                <a href="<?= htmlspecialchars($ad['click_url'] ?? '#') ?>" onclick="trackAdClick('<?= $ad['id'] ?>')" class="btn btn-primary btn-sm" target="_blank" rel="noopener">Learn More</a>
+            </div>
+        <?php else: ?>
+            <div style="padding:1rem;text-align:center;color:var(--text-secondary);"><?= htmlspecialchars($ad['title']) ?></div>
+        <?php endif; ?>
+        <div class="ad-meta" style="padding:.5rem;background:var(--bg-input);font-size:.75rem;color:var(--text-muted);border-top:1px solid var(--border-color);text-align:center;">Advertisement</div>
+    </div>
+    <?php
+    static $trackedAds = [];
+    if (!in_array($ad['id'], $trackedAds)) {
+        echo '<script>(function(){ setTimeout(function(){ fetch("/api/track-ad-impression.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ad_id: "' . $ad['id'] . '", user_region: "' . ($userRegion ?? '') . '", user_language: "' . $userLanguage . '" }) }); }, 1500); })();</script>';
+        $trackedAds[] = $ad['id'];
+    }
+    return ob_get_clean();
+}
+
+function trackAdClickJs(): string
+{
+    return '<script>function trackAdClick(adId){ fetch("/api/track-ad-click.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ad_id: adId }) }).catch(e=>console.error("Click tracking failed:",e)); }</script>';
+}
 
 try {
     global $pdo;
@@ -379,6 +425,11 @@ $sanitizedContent = preg_replace_callback(
                     <div class="article-copy article-body">
                         <?= $sanitizedContent ?>
 
+                        <!-- Ad Placement: Leaderboard between article content -->
+                        <div style="margin: 1.5rem 0;">
+                            <?= displayArticleAd('tier-leaderboard', $userRegion, $userLanguage) ?>
+                        </div>
+
                         <?php if (isset($promoBlocks[0])): ?>
                             <div class="article-inline-promo">
                                 <span class="news-eyebrow"><?= htmlspecialchars($promoBlocks[0]['eyebrow']) ?></span>
@@ -470,6 +521,11 @@ $sanitizedContent = preg_replace_callback(
                         </div>
                     <?php endif; ?>
 
+                    <!-- Ad Placement: Sidebar skyscraper -->
+                    <div style="margin-top:1rem;">
+                        <?= displayArticleAd('tier-skyscraper', $userRegion, $userLanguage) ?>
+                    </div>
+
                     <?php if (!empty($relatedArticles)): ?>
                         <div class="article-list-card">
                             <div class="article-rail-card" style="border:none; box-shadow:none; padding-bottom:.4rem;">
@@ -496,5 +552,6 @@ $sanitizedContent = preg_replace_callback(
 </div>
 <?php endif; ?>
 <script src="../assets/js/theme-switcher.js?v=<?= time() ?>"></script>
+<?= trackAdClickJs() ?>
 </body>
 </html>

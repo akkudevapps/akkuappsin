@@ -26,6 +26,10 @@ $adminPage = basename($_SERVER['PHP_SELF']);
         <li class="menu-divider">Commerce</li>
         <li><a href="/admin/marketplace.php"><i class="fas fa-cart-shopping"></i> Marketplace</a></li>
         <li><a href="/admin/services.php"><i class="fas fa-screwdriver-wrench"></i> Services</a></li>
+        <li><a href="/admin/advertising.php" class="<?= $adminPage === 'advertising.php' ? 'active' : '' ?>"><i class="fas fa-ad"></i> Advertising</a></li>
+        <li><a href="/admin/ad-providers.php" class="<?= $adminPage === 'ad-providers.php' ? 'active' : '' ?>"><i class="fas fa-building"></i> Ad Providers</a></li>
+        <li><a href="/admin/pricing-tiers.php" class="<?= $adminPage === 'pricing-tiers.php' ? 'active' : '' ?>"><i class="fas fa-tags"></i> Pricing Tiers</a></li>
+        <li><a href="/admin/ad-analytics.php" class="<?= $adminPage === 'ad-analytics.php' ? 'active' : '' ?>"><i class="fas fa-chart-line"></i> Ad Analytics</a></li>
         <li><a href="https://chatbot.akkuapps.in/" target="_blank" rel="noopener"><i class="fas fa-robot"></i> Chatbot</a></li>
         <li>
             <a href="/admin/users.php" class="<?= $adminPage === 'users.php' ? 'active' : '' ?>">

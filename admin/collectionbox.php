@@ -64,6 +64,24 @@ try {
     <title>Treasury Dashboard - AkkuApps Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/themes.css?v=<?= time() ?>">
+    <style>
+        @media (max-width: 768px) {
+            .welcome-banner h1 { font-size: 1.3rem !important; }
+            .welcome-banner p { font-size: 0.85rem !important; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; }
+            .stat-card { padding: 1rem !important; }
+            .stat-info h3 { font-size: 1.2rem !important; }
+            .surface-grid { grid-template-columns: 1fr !important; }
+            .page-shell { padding: 0.75rem !important; }
+            .info-grid { grid-template-columns: 1fr !important; }
+            .page-head { flex-direction: column !important; gap: 0.5rem !important; }
+        }
+        @media (max-width: 480px) {
+            .welcome-banner h1 { font-size: 1.1rem !important; }
+            .stats-grid { grid-template-columns: 1fr 1fr !important; }
+            .stat-info h3 { font-size: 1rem !important; }
+        }
+    </style>
 </head>
 <body>
     <?php include '../components/admin-header.php'; ?>

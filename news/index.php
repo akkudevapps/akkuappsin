@@ -3,12 +3,18 @@ define('AKKUAPPS_LOADED', true);
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/news-engine.php';
+require_once '../includes/ad-engine.php';
 
 $category = trim((string) ($_GET['category'] ?? ''));
 $kind = trim((string) ($_GET['kind'] ?? ''));
 $articles = [];
 $error = '';
 $promoBlocks = akkuNewsPromoBlocks();
+
+// Get user location and language for ad targeting
+$userLocation = akkuAdGetUserLocationAndLanguage();
+$userRegion = $userLocation['region'] ?? null;
+$userLanguage = $userLocation['language'] ?? 'en';
 
 try {
     global $pdo;
@@ -76,6 +82,69 @@ function newsIndexUrl(string $category, string $kind): string
     ]));
 
     return '/news/' . ($query ? '?' . $query : '');
+}
+
+function displayNewsAd($adSizeId = null, $userRegion = null, $userLanguage = 'en'): string
+{
+    global $pdo;
+    $ad = akkuAdGetActiveAds($pdo, null, $adSizeId, $userRegion, $userLanguage);
+    if (empty($ad)) {
+        return '<div class="news-empty-ad"><i class="fas fa-megaphone"></i> <p style="margin: 0;">Advertisement space</p></div>';
+    }
+    $ad = $ad[0];
+    ob_start();
+    ?>
+    <div class="news-ad-wrapper" data-ad-id="<?= htmlspecialchars($ad['id']) ?>" style="position: relative; background: var(--bg-hover); border-radius: 12px; overflow: hidden;">
+        <?php if ($ad['ad_type'] === 'image' && !empty($ad['image_url'])): ?>
+            <a href="<?= htmlspecialchars($ad['click_url'] ?? '#') ?>" target="_blank" rel="noopener" onclick="trackAdClick('<?= $ad['id'] ?>')" style="display: block; text-decoration: none;">
+                <img src="<?= htmlspecialchars($ad['image_url']) ?>" alt="<?= htmlspecialchars($ad['title']) ?>" style="width: 100%; height: auto; display: block;" loading="lazy">
+            </a>
+        <?php elseif ($ad['ad_type'] === 'text'): ?>
+            <div style="padding: 1rem; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(16,185,129,0.05));">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary);"><?= htmlspecialchars($ad['title']) ?></h4>
+                <p style="margin: 0 0 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;"><?= htmlspecialchars($ad['description']) ?></p>
+                <a href="<?= htmlspecialchars($ad['click_url'] ?? '#') ?>" onclick="trackAdClick('<?= $ad['id'] ?>')" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1rem;" target="_blank" rel="noopener">Learn More</a>
+            </div>
+        <?php else: ?>
+            <div style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                <p style="margin: 0;"><?= htmlspecialchars($ad['title']) ?></p>
+            </div>
+        <?php endif; ?>
+        <div class="ad-meta" style="padding: 0.5rem; background: var(--bg-input); font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-color); text-align: center;">
+            Advertisement • <span id="impressions-<?= $ad['id'] ?>"><?= $ad['impressions'] ?? 0 ?></span> impressions • CTR: <span id="ctr-<?= $ad['id'] ?>"><?= number_format($ad['ctr'] ?? 0, 2) ?>%</span>
+        </div>
+    </div>
+    <?php
+    // Track impression once per page load
+    static $trackedAds = [];
+    if (!in_array($ad['id'], $trackedAds)) {
+        echo '<script>
+        (function() {
+            setTimeout(function() {
+                fetch("/api/track-ad-impression.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ad_id: "' . $ad['id'] . '", user_region: "' . ($userRegion ?? '') . '", user_language: "' . $userLanguage . '" })
+                }).catch(e => console.error("Ad tracking failed:", e));
+            }, 2000);
+        })();
+        </script>';
+        $trackedAds[] = $ad['id'];
+    }
+    return ob_get_clean();
+}
+
+function trackAdClickJs(): string
+{
+    return '<script>
+    function trackAdClick(adId) {
+        fetch("/api/track-ad-click.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ad_id: adId })
+        }).catch(e => console.error("Click tracking failed:", e));
+    }
+    </script>';
 }
 ?>
 <!DOCTYPE html>
@@ -299,6 +368,22 @@ function newsIndexUrl(string $category, string $kind): string
             color: var(--text-secondary);
             text-align: center;
         }
+        .news-ad-wrapper {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .news-ad-wrapper img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        .news-ad-wrapper a {
+            text-decoration: none;
+        }
+        .ad-meta {
+            font-size: 0.7rem;
+        }
         @media (max-width: 1100px) {
             .news-hub-hero,
             .news-stat-strip {
@@ -419,13 +504,32 @@ function newsIndexUrl(string $category, string $kind): string
                                 <div><a class="btn btn-primary btn-sm" href="<?= htmlspecialchars($promoBlocks[0]['cta_href']) ?>"><?= htmlspecialchars($promoBlocks[0]['cta_label']) ?></a></div>
                             </div>
                         <?php endif; ?>
+                        
+                        <!-- Ad Placement: Sidebar Ad (Leaderboard or Skyscraper) -->
+                        <div style="margin-top: 1rem;">
+                            <?= displayNewsAd('tier-skyscraper', $userRegion, $userLanguage) ?>
+                        </div>
                     </aside>
                 </section>
+
+                <!-- Ad Placement: Between Hero and Grid (Leaderboard) -->
+                <div style="margin: 2rem 0;">
+                    <?= displayNewsAd('tier-leaderboard', $userRegion, $userLanguage) ?>
+                </div>
 
                 <section class="news-grid-mix">
                     <?php
                     $promoIndex = 1;
+                    $adCounter = 0;
                     foreach ($gridArticles as $index => $article):
+                        // Insert ad every 6 articles
+                        if ($adCounter > 0 && $adCounter % 6 === 0):
+                    ?>
+                        <div class="news-grid-card" style="background: var(--bg-card); padding: 0; border-radius: 12px;">
+                            <?= displayNewsAd('tier-banner', $userRegion, $userLanguage) ?>
+                        </div>
+                    <?php
+                        endif;
                         if ($index > 0 && $index % 4 === 0 && isset($promoBlocks[$promoIndex])):
                     ?>
                         <article class="news-grid-card promoted">
@@ -468,7 +572,7 @@ function newsIndexUrl(string $category, string $kind): string
                                 <div><a class="btn btn-primary btn-sm" href="<?= htmlspecialchars(akkuNewsPublicUrl($article)) ?>">Read Article</a></div>
                             </div>
                         </article>
-                    <?php endforeach; ?>
+                    <?php $adCounter++; endforeach; ?>
 
                     <?php if (empty($gridArticles)): ?>
                         <div class="news-empty-ad" style="grid-column: 1 / -1;">
@@ -483,5 +587,6 @@ function newsIndexUrl(string $category, string $kind): string
 </div>
 <?php endif; ?>
 <script src="../assets/js/theme-switcher.js?v=<?= time() ?>"></script>
+<?= trackAdClickJs() ?>
 </body>
 </html>

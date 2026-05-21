@@ -56,6 +56,31 @@ try {
     <title>Service Bookings - AkkuApps Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/themes.css?v=<?= time() ?>">
+    <style>
+        .segment-links { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .segment-link { padding: 0.5rem 1rem; border-radius: 20px; background: var(--bg-input); color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; }
+        .segment-link.active { background: var(--primary); color: white; }
+        @media (max-width: 768px) {
+            .welcome-banner h1 { font-size: 1.3rem !important; }
+            .welcome-banner p { font-size: 0.85rem !important; }
+            .chart-container { padding: 1rem !important; }
+            .chart-container h2 { font-size: 1.1rem !important; }
+            .page-shell { padding: 0.75rem !important; }
+            .toolbar-row { flex-direction: column !important; gap: 0.5rem !important; }
+            .toolbar-row .btn { width: 100% !important; }
+            .segment-links { flex-wrap: wrap; }
+            .segment-link { font-size: 0.75rem; padding: 0.4rem 0.75rem; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; left: -9999px; top: -9999px; }
+            tr { border: 1px solid var(--border-color); margin-bottom: 0.75rem; border-radius: 12px; overflow: hidden; }
+            td { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border-color); }
+            td:last-child { border-bottom: none; }
+            td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; }
+        }
+        @media (max-width: 480px) {
+            .welcome-banner h1 { font-size: 1.1rem !important; }
+        }
+    </style>
 </head>
 <body>
 <?php include '../components/admin-header.php'; ?>

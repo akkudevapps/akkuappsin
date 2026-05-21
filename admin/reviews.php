@@ -59,6 +59,27 @@ try {
     <title>Review Management - AkkuApps Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/themes.css?v=<?= time() ?>">
+    <style>
+        .segment-links { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .segment-link { padding: 0.5rem 1rem; border-radius: 20px; background: var(--bg-input); color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; }
+        .segment-link.active { background: var(--primary); color: white; }
+        @media (max-width: 768px) {
+            .welcome-banner h1 { font-size: 1.3rem !important; }
+            .welcome-banner p { font-size: 0.85rem !important; }
+            .chart-container { padding: 1rem !important; }
+            .chart-container h2 { font-size: 1.1rem !important; }
+            .page-shell { padding: 0.75rem !important; }
+            .toolbar-row { flex-direction: column !important; gap: 0.5rem !important; }
+            .toolbar-row .btn { width: 100% !important; }
+            .info-grid { grid-template-columns: 1fr !important; }
+            .segment-links { flex-wrap: wrap; }
+            .segment-link { font-size: 0.75rem; padding: 0.4rem 0.75rem; }
+        }
+        @media (max-width: 480px) {
+            .welcome-banner h1 { font-size: 1.1rem !important; }
+            .page-head-copy h3 { font-size: 1rem !important; }
+        }
+    </style>
 </head>
 <body>
 <?php include '../components/admin-header.php'; ?>

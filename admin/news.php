@@ -339,6 +339,9 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
     <title>News Engine - AkkuApps Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/themes.css?v=<?= time() ?>">
+    <!-- CKEditor 5 Cloud CDN -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/43.0.0/ckeditor5.umd.js"></script>
+    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.0.0/ckeditor5.css">
     <style>
         .news-admin-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, .9fr); gap: 1.5rem; }
         .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
@@ -448,19 +451,54 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
         .workspace-panel.active { display: block; animation: fadeIn .2s ease; }
 
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        
+        /* Enhanced Create Article Form */
+        .create-article-form { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 1.5rem; }
+        .create-article-form .form-section { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .create-article-form .form-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .form-section-title { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .form-section-title i { font-size: 0.8rem; color: var(--primary-light); }
+        .form-group small { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.25rem; }
+        .form-control::placeholder { color: var(--text-muted); opacity: 0.7; }
+        
+        /* Help Panel Styles */
+        .help-panel { position: fixed; right: -380px; top: 0; width: 380px; height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border-color); overflow-y: auto; z-index: 500; transition: right 0.3s ease; box-shadow: -2px 0 8px rgba(0,0,0,0.1); }
+        .help-panel.open { right: 0; }
+        .help-panel-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; background: var(--bg-card); z-index: 10; }
+        .help-panel-header h3 { font-size: 1.1rem; color: var(--text-primary); margin: 0; }
+        .help-panel-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); padding: 4px 8px; border-radius: 6px; }
+        .help-panel-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .help-panel-content { padding: 1.5rem; }
+        .help-section { margin-bottom: 2rem; }
+        .help-section h4 { font-size: 0.95rem; color: var(--text-primary); font-weight: 600; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem; }
+        .help-section h4 i { color: var(--primary); font-size: 0.85rem; }
+        .help-section p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin: 0 0 0.5rem 0; }
+        .help-section ul { font-size: 0.85rem; color: var(--text-muted); margin: 0; padding-left: 1.2rem; line-height: 1.6; }
+        .help-section li { margin-bottom: 0.4rem; }
+        .help-section code { background: var(--bg-hover); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; color: var(--primary-light); font-family: 'Courier New', monospace; }
+        .help-toggle-btn { position: fixed; right: 20px; bottom: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(99,102,241,0.4); z-index: 499; transition: all 0.3s ease; }
+        .help-toggle-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(99,102,241,0.5); }
+        .help-toggle-btn.hidden { opacity: 0; pointer-events: none; }
+        
+        /* Better responsive toolbar */
+        .rte-toolbar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .rte-group { flex-shrink: 0; }
 
         @media (max-width: 1100px) {
             .news-admin-grid { grid-template-columns: 1fr; }
             .metric-grid { grid-template-columns: repeat(2, 1fr); }
+            .help-panel { width: 320px; right: -320px; }
         }
         @media (max-width: 768px) {
             .metric-grid { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
-            .metric-card { padding: .85rem; }
+            .metric-card { padding: .85rem; border-radius: 12px; }
             .metric-card strong { font-size: 1.4rem; }
-            .rte-toolbar { gap: 1px; padding: 4px; }
-            .rte-btn { width: 28px; height: 28px; font-size: .72rem; }
+            .metric-card h3 { font-size: 0.75rem; }
+            .metric-icon { width: 28px !important; height: 28px !important; font-size: 0.7rem !important; }
+            .rte-toolbar { gap: 1px; padding: 4px; overflow-x: auto; }
+            .rte-btn { width: 28px; height: 28px; font-size: .72rem; flex-shrink: 0; }
             .rte-group { padding: 0 2px; }
-            .rte-editor { min-height: 250px; padding: .75rem; }
+            .rte-editor { min-height: 250px; padding: .75rem; font-size: 1rem; }
             .search-filter-bar { flex-direction: column; }
             .search-input-wrap { min-width: 100%; }
             .filter-select { width: 100%; }
@@ -476,11 +514,413 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
             .toolbar-row { flex-direction: column; gap: .4rem; }
             .toolbar-row .btn, .toolbar-row form { width: 100%; }
             .workspace-tabs { overflow-x: auto; }
+            .create-article-form { padding: 1rem; border-radius: 8px; }
+            .create-article-form .form-section { margin-bottom: 1.5rem; padding-bottom: 1rem; }
+            .form-section-title { font-size: 0.75rem; margin-bottom: 0.75rem; }
+            .help-panel { width: 100vw; right: -100vw; }
+            .help-toggle-btn { opacity: 1 !important; }
+        }
+        @media (max-width: 768px) {
+            .metric-grid { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+            .metric-card { padding: .85rem; border-radius: 12px; }
+            .metric-card strong { font-size: 1.4rem; }
+            .metric-card h3 { font-size: 0.75rem; }
+            .metric-icon { width: 28px !important; height: 28px !important; font-size: 0.7rem !important; }
+            .rte-toolbar { gap: 1px; padding: 4px; overflow-x: auto; }
+            .rte-btn { width: 28px; height: 28px; font-size: .72rem; flex-shrink: 0; }
+            .rte-group { padding: 0 2px; }
+            .rte-editor { min-height: 250px; padding: .75rem; font-size: 1rem; }
+            .search-filter-bar { flex-direction: column; }
+            .search-input-wrap { min-width: 100%; }
+            .filter-select { width: 100%; }
+            .editor-actions { flex-direction: column; }
+            .editor-actions .btn { width: 100%; justify-content: center; }
+            .form-grid { grid-template-columns: 1fr; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; left: -9999px; top: -9999px; }
+            tr { border: 1px solid var(--border-color); margin-bottom: .75rem; border-radius: 12px; overflow: hidden; }
+            td { display: flex; justify-content: space-between; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--border-color); }
+            td:last-child { border-bottom: none; }
+            td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: .75rem; text-transform: uppercase; }
+            .toolbar-row { flex-direction: column; gap: .4rem; }
+            .toolbar-row .btn, .toolbar-row form { width: 100%; }
+            .workspace-tabs { overflow-x: auto; }
+            .create-article-form { padding: 1rem; border-radius: 8px; }
+            .create-article-form .form-section { margin-bottom: 1.5rem; padding-bottom: 1rem; }
+            .form-section-title { font-size: 0.75rem; margin-bottom: 0.75rem; }
+            .news-note { padding: 0.75rem; font-size: 0.8rem; }
+            .editor-modal { max-width: 90vw !important; }
+            .editor-modal-body { max-height: calc(80vh - 120px); overflow-y: auto; padding: 0.75rem; }
+            .page-shell { padding: 0.75rem !important; }
+            .welcome-banner h1 { font-size: 1.3rem !important; }
+            .welcome-banner p { font-size: 0.85rem !important; }
+            .chart-container { padding: 1rem !important; }
+            .chart-container h2 { font-size: 1.1rem !important; }
         }
         @media (max-width: 480px) {
             .metric-grid { grid-template-columns: 1fr 1fr; }
             .rte-btn { width: 26px; height: 26px; font-size: .68rem; }
             .rte-select { font-size: .7rem; height: 26px; }
+            .create-article-form { padding: 0.75rem; }
+            .news-note { padding: 0.6rem; font-size: 0.75rem; margin-bottom: 0.75rem; }
+            .rte-editor { min-height: 200px; padding: 0.5rem; }
+            .editor-modal { max-width: 95vw !important; }
+            .welcome-banner h1 { font-size: 1.1rem !important; }
+            .form-section-title { font-size: 0.7rem; }
+        }
+    </style>
+    <style>
+        /* Enhanced UI with animations and better interactions */
+        :root {
+            --transition-speed: 0.3s;
+            --animation-speed: 0.4s;
+        }
+        
+        /* Editor-specific enhancements */
+        .ckeditor-container {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            transition: all var(--transition-speed);
+            background: var(--bg-input);
+        }
+        
+        .ckeditor-container:hover,
+        .ckeditor-container:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        /* Enhanced toolbar */
+        .ck-toolbar {
+            background: var(--bg-elevated) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            padding: 6px !important;
+            gap: 2px !important;
+            flex-wrap: wrap !important;
+        }
+        
+        .ck-toolbar .ck-button {
+            border-radius: 6px !important;
+            transition: all 0.2s ease !important;
+            margin: 0 !important;
+            min-width: 30px !important;
+            height: 30px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.8rem !important;
+        }
+        
+        .ck-toolbar .ck-button:hover:not(.ck-disabled) {
+            background: var(--bg-hover) !important;
+            color: var(--text-primary) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        .ck-toolbar .ck-button.ck-on:not(.ck-disabled),
+        .ck-toolbar .ck-button.ck-on.ck-focused:not(.ck-disabled) {
+            background: rgba(99,102,241,.15) !important;
+            color: var(--primary-light) !important;
+        }
+        
+        .ck-toolbar .ck-dropdown {
+            border-radius: 6px !important;
+            border: 1px solid var(--border-color) !important;
+            background: var(--bg-input) !important;
+            min-width: 80px !important;
+        }
+        
+        .ck-toolbar .ck-dropdown:hover:not(.ck-disabled) {
+            border-color: var(--primary) !important;
+            background: var(--bg-hover) !important;
+        }
+        
+        .ck-toolbar .ck-dropdown .ck-button {
+            padding: 0 6px !important;
+            min-width: 80px !important;
+            justify-content: space-between !important;
+        }
+        
+        /* Enhanced editor content */
+        .ck-editor__editable {
+            min-height: 350px !important;
+            max-height: 600px !important;
+            overflow-y: auto !important;
+            padding: 1rem !important;
+            color: var(--text-primary) !important;
+            font-size: .95rem !important;
+            line-height: 1.7 !important;
+            background: var(--bg-input) !important;
+        }
+        
+        .ck-editor__editable:focus {
+            outline: none !important;
+            box-shadow: inset 0 0 0 2px rgba(99,102,241,0.2) !important;
+        }
+        
+        .ck-editor__editable:empty::before {
+            content: attr(data-placeholder) !important;
+            color: var(--text-muted) !important;
+            pointer-events: none !important;
+        }
+        
+        /* Enhanced specific elements */
+        .ck.ck-heading_dropdown .ck-button {
+            min-width: 90px !important;
+        }
+        
+        .ck.ck-blockquote .ck-icon,
+        .ck.ck-code_block .ck-icon,
+        .ck.ck-strikethrough .ck-icon,
+        .ck.ck-underline .ck-icon {
+            font-size: 0.9rem !important;
+        }
+        
+        /* Responsive toolbar */
+        @media (max-width: 768px) {
+            .ck-toolbar {
+                padding: 4px !important;
+                gap: 1px !important;
+            }
+            
+            .ck-toolbar .ck-button {
+                min-width: 28px !important;
+                height: 28px !important;
+                font-size: .72rem !important;
+            }
+            
+            .ck-toolbar .ck-dropdown {
+                min-width: 70px !important;
+            }
+            
+            .ck-editor__editable {
+                min-height: 250px !important;
+                padding: .75rem !important;
+                font-size: 1rem !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .ck-toolbar .ck-button {
+                min-width: 26px !important;
+                height: 26px !important;
+                font-size: .68rem !important;
+            }
+            
+            .ck-toolbar .ck-dropdown {
+                min-width: 65px !important;
+                font-size: .7rem !important;
+            }
+            
+            .ck-editor__editable {
+                min-height: 200px !important;
+                padding: 0.5rem !important;
+            }
+        }
+    </style>
+        
+        /* Animated gradient borders */
+        .animated-border {
+            position: relative;
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+        }
+        
+        .animated-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--purple), var(--info));
+            background-size: 400% 400%;
+            z-index: -1;
+            animation: gradientShift 8s ease infinite;
+            border-radius: inherit;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Enhanced button hover effects */
+        .btn {
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left var(--transition-speed);
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Enhanced form controls */
+        .form-control {
+            transition: all var(--transition-speed);
+            border-radius: 10px;
+        }
+        
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        .form-control:hover:not(:focus) {
+            border-color: var(--text-muted);
+        }
+        
+        /* Enhanced cards with hover lift */
+        .metric-card, .asset-link-card, .surface-card, .create-article-form {
+            transition: all var(--transition-speed);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card:hover, .asset-link-card:hover, .surface-card:hover, .create-article-form:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        /* Enhanced tabs */
+        .workspace-tab {
+            position: relative;
+            transition: all var(--transition-speed);
+        }
+        
+        .workspace-tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width var(--transition-speed);
+        }
+        
+        .workspace-tab.active::after {
+            width: 100%;
+        }
+        
+        .workspace-tab:hover {
+            color: var(--text-secondary);
+        }
+        
+        /* Enhanced dropdowns */
+        .action-dropdown-menu {
+            transition: opacity var(--transition-speed), transform var(--transition-speed);
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+        }
+        
+        .action-dropdown.open .action-dropdown-menu {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+        
+        /* Enhanced modals */
+        .editor-modal {
+            transition: opacity var(--transition-speed), transform var(--transition-speed);
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        
+        .editor-modal-overlay.active .editor-modal {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        /* Enhanced CKEditor container */
+        .ckeditor-container {
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-speed);
+        }
+        
+        .ckeditor-container:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        /* Enhanced tooltips */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+        
+        [title]::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed);
+        }
+        
+        [title]:hover::after {
+            opacity: 1;
+        }
+        
+        /* Loading states */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        /* Responsive enhancements */
+        @media (max-width: 768px) {
+            .metric-grid {
+                gap: .75rem;
+            }
+            
+            .workspace-tab {
+                padding: 6px 10px;
+                font-size: .75rem;
+            }
         }
     </style>
 </head>
@@ -510,9 +950,9 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
                 <section class="chart-container">
                     <h2><?= $editorArticle ? 'Edit Article Engine' : 'Create Article' ?></h2>
                     <div class="news-note">
-                        `Blog` is best for guides, opinions, and interactive content. `News` is for reporting, announcements, and current updates.
+                        <i class="fas fa-lightbulb"></i> <strong>Tip:</strong> `Blog` is best for guides, opinions, and interactive content. `News` is for reporting, announcements, and current updates.
                     </div>
-                    <form method="POST" style="margin-top:1rem;">
+                    <form method="POST" class="create-article-form">
                         <?php if ($editorArticle): ?>
                             <input type="hidden" name="update_article" value="1">
                             <input type="hidden" name="article_key" value="<?= htmlspecialchars((string) ($newsLookupColumn && isset($editorArticle[$newsLookupColumn]) ? $editorArticle[$newsLookupColumn] : '')) ?>">
@@ -521,130 +961,121 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
                             <input type="hidden" name="create_article" value="1">
                         <?php endif; ?>
 
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Title</label>
-                                <input class="form-control" type="text" name="title" required value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'title')) ?>">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">URL Slug</label>
-                                <input class="form-control" type="text" name="slug" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'slug')) ?>" placeholder="auto-from-title">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Article Type</label>
-                                <select class="form-control" name="article_type">
-                                    <option value="news" <?= $editorType === 'news' ? 'selected' : '' ?>>News</option>
-                                    <option value="blog" <?= $editorType === 'blog' ? 'selected' : '' ?>>Blog</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Status</label>
-                                <select class="form-control" name="status">
-                                    <option value="draft" <?= newsFieldValue($editorArticle ?? [], 'status', 'draft') === 'draft' ? 'selected' : '' ?>>Draft</option>
-                                    <option value="published" <?= newsFieldValue($editorArticle ?? [], 'status') === 'published' ? 'selected' : '' ?>>Published</option>
-                                    <option value="archived" <?= newsFieldValue($editorArticle ?? [], 'status') === 'archived' ? 'selected' : '' ?>>Archived</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Category</label>
-                                <input class="form-control" type="text" name="category" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'category', 'general')) ?>">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Article Folder</label>
-                                <input class="form-control" type="text" value="<?= htmlspecialchars((string) ($editorFolder ?: 'Will be created automatically')) ?>" readonly>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Excerpt / Summary</label>
-                            <textarea class="form-control" name="excerpt" rows="3"><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'excerpt')) ?></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Main Content</label>
-                            <div class="rte-wrapper">
-                                <div class="rte-toolbar" id="rteToolbar">
-                                    <div class="rte-group">
-                                        <button type="button" class="rte-btn" data-cmd="bold" title="Bold"><i class="fas fa-bold"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="italic" title="Italic"><i class="fas fa-italic"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="underline" title="Underline"><i class="fas fa-underline"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="strikethrough" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
-                                    </div>
-                                    <div class="rte-group">
-                                        <select class="rte-select" data-cmd="formatBlock" title="Heading">
-                                            <option value="p">Paragraph</option>
-                                            <option value="h1">Heading 1</option>
-                                            <option value="h2">Heading 2</option>
-                                            <option value="h3">Heading 3</option>
-                                            <option value="h4">Heading 4</option>
-                                        </select>
-                                    </div>
-                                    <div class="rte-group">
-                                        <button type="button" class="rte-btn" data-cmd="insertOrderedList" title="Ordered List"><i class="fas fa-list-ol"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Unordered List"><i class="fas fa-list-ul"></i></button>
-                                    </div>
-                                    <div class="rte-group">
-                                        <button type="button" class="rte-btn" data-cmd="formatBlock" data-value="blockquote" title="Quote"><i class="fas fa-quote-left"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="insertCodeBlock" title="Code Block"><i class="fas fa-code"></i> Code</button>
-                                        <button type="button" class="rte-btn" data-cmd="insertHorizontalRule" title="Horizontal Rule"><i class="fas fa-minus"></i></button>
-                                    </div>
-                                    <div class="rte-group">
-                                        <button type="button" class="rte-btn" data-cmd="insertLink" title="Insert Link"><i class="fas fa-link"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="insertImage" title="Insert Image"><i class="fas fa-image"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="openFileUpload" title="Upload File"><i class="fas fa-paperclip"></i></button>
-                                    </div>
-                                    <div class="rte-group">
-                                        <button type="button" class="rte-btn" data-cmd="undo" title="Undo"><i class="fas fa-undo"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="redo" title="Redo"><i class="fas fa-redo"></i></button>
-                                        <button type="button" class="rte-btn" data-cmd="removeFormat" title="Clear Formatting"><i class="fas fa-eraser"></i></button>
-                                    </div>
+                        <!-- Basic Info Section -->
+                        <div class="form-section">
+                            <div class="form-section-title"><i class="fas fa-pen"></i> Basic Information</div>
+                            <div class="form-grid">
+                                <div class="form-group" style="grid-column: 1/-1;">
+                                    <label class="form-label">Article Title <span style="color: var(--danger);">*</span></label>
+                                    <input class="form-control" type="text" name="title" required value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'title')) ?>" placeholder="Enter a compelling headline...">
                                 </div>
-                                <div class="rte-editor" id="rteEditor" contenteditable="true" data-placeholder="Start writing your article... Use the toolbar above to format text, insert code blocks, links, images, and files."></div>
+                                <div class="form-group">
+                                    <label class="form-label">URL Slug</label>
+                                    <input class="form-control" type="text" name="slug" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'slug')) ?>" placeholder="auto-generated-from-title">
+                                    <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Leave blank to auto-generate from title</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Article Type</label>
+                                    <select class="form-control" name="article_type">
+                                        <option value="news" <?= $editorType === 'news' ? 'selected' : '' ?>>📰 News</option>
+                                        <option value="blog" <?= $editorType === 'blog' ? 'selected' : '' ?>>✍️ Blog</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-control" name="status">
+                                        <option value="draft" <?= newsFieldValue($editorArticle ?? [], 'status', 'draft') === 'draft' ? 'selected' : '' ?>>📝 Draft</option>
+                                        <option value="published" <?= newsFieldValue($editorArticle ?? [], 'status') === 'published' ? 'selected' : '' ?>>✅ Published</option>
+                                        <option value="archived" <?= newsFieldValue($editorArticle ?? [], 'status') === 'archived' ? 'selected' : '' ?>>📦 Archived</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Category</label>
+                                    <input class="form-control" type="text" name="category" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'category', 'general')) ?>" placeholder="e.g., Hardware, Deals, Guides">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Article Folder</label>
+                                    <input class="form-control" type="text" value="<?= htmlspecialchars((string) ($editorFolder ?: 'Auto-created on save')) ?>" readonly style="background: var(--bg-input); opacity: 0.7;">
+                                </div>
                             </div>
-                            <textarea name="content" id="contentHidden" style="display:none;" required><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'content')) ?></textarea>
                         </div>
 
-                        <div class="form-grid">
+                        <!-- Content Section -->
+                        <div class="form-section">
+                            <div class="form-section-title"><i class="fas fa-file-alt"></i> Content</div>
                             <div class="form-group">
-                                <label class="form-label">Featured Image</label>
-                                <input class="form-control" type="text" name="featured_image" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'featured_image')) ?>" placeholder="/uploads/newsroom/article/cover.png">
+                                <label class="form-label">Excerpt / Summary</label>
+                                <textarea class="form-control" name="excerpt" rows="2" placeholder="Brief summary (100-150 words ideal)"><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'excerpt')) ?></textarea>
+                                <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Displayed in listings and previews</small>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Document URL</label>
-                                <input class="form-control" type="text" name="document_url" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'document_url')) ?>" placeholder="PDF, Drive, Docs link">
+
+        <div class="form-group">
+            <label class="form-label">Main Content <span style="color: var(--danger);">*</span></label>
+            <div class="ckeditor-container" style="position: relative; border-radius: var(--border-radius-lg); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                <textarea id="contentEditor" name="content" required style="display:none;"><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'content')) ?></textarea>
+                <div id="ckEditor" style="min-height: 400px;"></div>
+            </div>
+            <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Full-featured rich text editor with support for headings, lists, quotes, code blocks, tables, and more.</small>
+        </div>
+                        </div>
+
+                        <!-- Media & References Section -->
+                        <div class="form-section">
+                            <div class="form-section-title"><i class="fas fa-photo-film"></i> Media & References</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Featured Image</label>
+                                    <input class="form-control" type="text" name="featured_image" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'featured_image')) ?>" placeholder="/uploads/newsroom/article/cover.png">
+                                    <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">URL or path to cover image</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Document URL</label>
+                                    <input class="form-control" type="text" name="document_url" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'document_url')) ?>" placeholder="PDF, Drive, Docs link">
+                                    <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Attach PDF, Google Drive, etc.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Reference Link</label>
+                                    <input class="form-control" type="text" name="reference_link" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'reference_link')) ?>" placeholder="https://source-url.com">
+                                    <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Source or citation URL</small>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Reference Link</label>
-                                <input class="form-control" type="text" name="reference_link" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'reference_link')) ?>" placeholder="source or citation URL">
-                            </div>
+                        </div>
+
+                        <!-- SEO Section -->
+                        <div class="form-section">
+                            <div class="form-section-title"><i class="fas fa-magnifying-glass"></i> SEO Settings</div>
                             <div class="form-group">
                                 <label class="form-label">SEO Title</label>
-                                <input class="form-control" type="text" name="seo_title" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'seo_title')) ?>">
+                                <input class="form-control" type="text" name="seo_title" value="<?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'seo_title')) ?>" placeholder="Optimized title for search engines">
+                                <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Leave blank to use article title</small>
+                            </div>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label class="form-label">SEO Description</label>
+                                <textarea class="form-control" name="seo_description" rows="2" placeholder="Brief meta description for search engines (150-160 characters ideal)"><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'seo_description')) ?></textarea>
+                                <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Displayed in search results</small>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">SEO Description</label>
-                            <textarea class="form-control" name="seo_description" rows="3"><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'seo_description')) ?></textarea>
+                        <!-- Publishing Options Section -->
+                        <div class="form-section">
+                            <div class="form-section-title"><i class="fas fa-gear"></i> Publishing Options</div>
+                            <label class="toolbar-row muted-text" style="margin-bottom:0;">
+                                <input type="checkbox" name="is_featured" value="1" <?= !empty($editorArticle['is_featured']) ? 'checked' : '' ?>>
+                                <span>Show in homepage featured section</span>
+                            </label>
                         </div>
 
-                        <label class="toolbar-row muted-text" style="margin-bottom:1rem;">
-                            <input type="checkbox" name="is_featured" value="1" <?= !empty($editorArticle['is_featured']) ? 'checked' : '' ?>>
-                            Show in homepage featured section
-                        </label>
-
-                        <div class="editor-actions">
-                            <button type="submit" class="btn btn-primary">
+                        <!-- Actions -->
+                        <div class="editor-actions" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-save"></i>
                                 <?= $editorArticle ? 'Update Article' : 'Create Article' ?>
                             </button>
                             <?php if ($editorArticle): ?>
-                                <a class="btn btn-secondary" href="/admin/news.php"><i class="fas fa-plus"></i> New Article</a>
-                                <a class="btn btn-secondary" href="<?= htmlspecialchars(akkuNewsPublicUrl($editorArticle)) ?>" target="_blank"><i class="fas fa-up-right-from-square"></i> Open Public View</a>
+                                <a class="btn btn-outline" href="/admin/news.php"><i class="fas fa-plus"></i> New Article</a>
+                                <a class="btn btn-outline" href="<?= htmlspecialchars(akkuNewsPublicUrl($editorArticle)) ?>" target="_blank"><i class="fas fa-up-right-from-square"></i> Open Public View</a>
                             <?php endif; ?>
+                        </div>
                         </div>
                     </form>
                 </section>
@@ -927,64 +1358,179 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
 
         <!-- Toast Container -->
         <div class="toast-container" id="toastContainer"></div>
+
+        <!-- Help Panel -->
+        <div class="help-panel" id="helpPanel">
+            <div class="help-panel-header">
+                <h3><i class="fas fa-question-circle"></i> Help & Docs</h3>
+                <button class="help-panel-close" onclick="toggleHelpPanel()">&times;</button>
+            </div>
+            <div class="help-panel-content">
+                <div class="help-section">
+                    <h4><i class="fas fa-pencil"></i> Content Editor</h4>
+                    <p>Use the rich text editor to write your article content. Supports:</p>
+                    <ul>
+                        <li>Headings (H1 - H4)</li>
+                        <li>Text formatting (bold, italic, underline)</li>
+                        <li>Lists (ordered and unordered)</li>
+                        <li>Block quotes and code blocks</li>
+                        <li>Links and images</li>
+                        <li>Tables with customizable rows/columns</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4><i class="fas fa-file"></i> Article Metadata</h4>
+                    <p>Essential fields for your article:</p>
+                    <ul>
+                        <li><strong>Title:</strong> Main heading (required)</li>
+                        <li><strong>Slug:</strong> URL-friendly identifier (auto-generated)</li>
+                        <li><strong>Excerpt:</strong> Brief summary for listings</li>
+                        <li><strong>Category:</strong> Organize by topic</li>
+                        <li><strong>Type:</strong> Blog, News, or Guide</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4><i class="fas fa-image"></i> Media & References</h4>
+                    <p>Add supporting materials:</p>
+                    <ul>
+                        <li><strong>Featured Image:</strong> Cover image URL</li>
+                        <li><strong>Document URL:</strong> Link to PDF or Drive document</li>
+                        <li><strong>Reference Link:</strong> Source or citation</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4><i class="fas fa-search"></i> SEO Settings</h4>
+                    <p>Optimize for search engines:</p>
+                    <ul>
+                        <li><strong>SEO Title:</strong> Custom title for search results (55-60 chars)</li>
+                        <li><strong>SEO Description:</strong> Meta description (150-160 chars)</li>
+                        <li>Leave blank to use article title/excerpt</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4><i class="fas fa-star"></i> Publishing Options</h4>
+                    <p>Control article visibility:</p>
+                    <ul>
+                        <li><strong>Status:</strong> Draft or Published</li>
+                        <li><strong>Featured:</strong> Show on homepage featured section</li>
+                        <li>Save as draft first, then publish</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4><i class="fas fa-lightbulb"></i> Best Practices</h4>
+                    <ul>
+                        <li>Keep titles clear and concise (50-60 characters)</li>
+                        <li>Write engaging excerpts (100-150 characters)</li>
+                        <li>Use headings to structure content</li>
+                        <li>Add relevant images for visual appeal</li>
+                        <li>Include source links for credibility</li>
+                        <li>Proofread before publishing</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4><i class="fas fa-folder"></i> Article Workspace</h4>
+                    <p>View article details, media references, and folder information in the right panel after creating an article.</p>
+                </div>
+
+                <div style="padding: 1rem 0; border-top: 1px solid var(--border-color); margin-top: 2rem;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Need more help? Check the admin documentation or contact support.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Toggle Button -->
+        <button class="help-toggle-btn" id="helpToggle" onclick="toggleHelpPanel()" title="Help & Documentation">
+            <i class="fas fa-question"></i>
+        </button>
     </main>
 </div>
 <script src="../assets/js/theme-switcher.js?v=<?= time() ?>"></script>
 <script>
+// Initialize CKEditor 5
+(async () => {
+    const { ClassicEditor, Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, Image, ImageUpload, Table, TableToolbar, BlockQuote, CodeBlock, Heading, List, SimpleUploadAdapter, Undo } = window;
+    
+    try {
+        const editor = await ClassicEditor.create(
+            document.getElementById('ckEditor'),
+            {
+                plugins: [ Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, Image, ImageUpload, Table, TableToolbar, BlockQuote, CodeBlock, Heading, List, SimpleUploadAdapter, Undo ],
+                toolbar: {
+                    items: [
+                        'heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|', 
+                        'bulletedList', 'numberedList', 'outdent', 'indent', '|', 
+                        'blockQuote', 'codeBlock', '|', 'link', 'imageUpload', 'insertTable', '|', 
+                        'undo', 'redo'
+                    ]
+                },
+                heading: {
+                    options: [
+                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
+                        { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' }
+                    ]
+                },
+                image: {
+                    resizeUnit: '%',
+                    resizeOptions: [
+                        { name: 'resizeImage:original', label: 'Original', value: null },
+                        { name: 'resizeImage:50', label: '50%', value: '50' },
+                        { name: 'resizeImage:75', label: '75%', value: '75' }
+                    ],
+                    toolbar: [ 'imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side', 'resizeImage' ]
+                },
+                table: { contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells' ] },
+                simpleUpload: {
+                    uploadUrl: '?action=upload_file&folder=<?= htmlspecialchars((string) ($editorFolder ?: 'temp')) ?>',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }
+            }
+        );
+        
+        // Sync CKEditor data to hidden textarea on form submit
+        const contentEditor = document.getElementById('contentEditor');
+        const form = contentEditor.closest('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                contentEditor.value = editor.getData();
+            });
+        }
+        
+        window.ckEditor = editor;
+    } catch(err) {
+        console.error('CKEditor initialization failed:', err);
+    }
+})();
+</script>
+<script>
+// Keep existing file upload and form handling functions
 (function() {
-    const editor = document.getElementById('rteEditor');
-    const hidden = document.getElementById('contentHidden');
-    const toolbar = document.getElementById('rteToolbar');
     const folder = '<?= htmlspecialchars((string) ($editorFolder ?: ($editorArticle ? ($selectedArticle['article_folder'] ?? '') : ''))) ?>';
 
-    if (hidden && hidden.value) editor.innerHTML = hidden.value;
+    // Help panel toggle function
+    window.toggleHelpPanel = function() {
+        const panel = document.getElementById('helpPanel');
+        const toggle = document.getElementById('helpToggle');
+        panel.classList.toggle('open');
+        toggle.classList.toggle('hidden');
+    };
 
-    editor.addEventListener('input', function() { hidden.value = editor.innerHTML; });
-
-    toolbar.addEventListener('click', function(e) {
-        const btn = e.target.closest('.rte-btn');
-        if (!btn) return;
-        const cmd = btn.dataset.cmd;
-        editor.focus();
-
-        if (cmd === 'insertLink') {
-            const sel = window.getSelection();
-            document.getElementById('linkText').value = sel.toString() || '';
-            document.getElementById('linkModal').classList.add('active');
-            return;
-        }
-        if (cmd === 'insertImage') {
-            document.getElementById('imageModal').classList.add('active');
-            return;
-        }
-        if (cmd === 'insertCodeBlock') {
-            document.getElementById('codeModal').classList.add('active');
-            return;
-        }
-        if (cmd === 'openFileUpload') {
-            if (!folder) { showToast('Save the article first to get a folder for uploads.', 'error'); return; }
-            document.getElementById('fileUploadModal').classList.add('active');
-            return;
-        }
-        if (cmd === 'formatBlock') {
-            const sel = btn.querySelector('select');
-            if (sel) {
-                document.execCommand('formatBlock', false, '<' + sel.value + '>');
-            } else if (btn.dataset.value) {
-                document.execCommand('formatBlock', false, '<' + btn.dataset.value + '>');
-            } else {
-                document.execCommand(cmd, false, null);
+    // Close help panel when pressing Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const panel = document.getElementById('helpPanel');
+            if (panel.classList.contains('open')) {
+                window.toggleHelpPanel();
             }
-            return;
         }
-        document.execCommand(cmd, false, null);
-    });
-
-    toolbar.querySelectorAll('.rte-select').forEach(function(sel) {
-        sel.addEventListener('change', function() {
-            editor.focus();
-            document.execCommand('formatBlock', false, '<' + this.value + '>');
-        });
     });
 
     document.querySelectorAll('[data-close]').forEach(function(btn) {
@@ -999,54 +1545,20 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
         });
     });
 
-    document.getElementById('linkInsertBtn').addEventListener('click', function() {
-        const url = document.getElementById('linkUrl').value.trim();
-        const text = document.getElementById('linkText').value.trim() || url;
-        if (!url) return;
-        editor.focus();
-        document.execCommand('insertHTML', false, '<a href="' + url + '" target="_blank" rel="noopener">' + text + '</a>');
-        hidden.value = editor.innerHTML;
-        document.getElementById('linkUrl').value = '';
-        document.getElementById('linkText').value = '';
-        document.getElementById('linkModal').classList.remove('active');
-    });
-
-    document.getElementById('imageInsertBtn').addEventListener('click', function() {
-        const url = document.getElementById('imageUrl').value.trim();
-        const alt = document.getElementById('imageAlt').value.trim();
-        if (!url) return;
-        editor.focus();
-        document.execCommand('insertHTML', false, '<img src="' + url + '" alt="' + alt + '">');
-        hidden.value = editor.innerHTML;
-        document.getElementById('imageUrl').value = '';
-        document.getElementById('imageAlt').value = '';
-        document.getElementById('imageModal').classList.remove('active');
-    });
-
-    document.getElementById('codeInsertBtn').addEventListener('click', function() {
-        const lang = document.getElementById('codeLang').value;
-        const code = document.getElementById('codeContent').value;
-        if (!code.trim()) return;
-        editor.focus();
-        const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        document.execCommand('insertHTML', false, '<pre class="code-block" data-lang="' + lang + '"><code>' + escaped + '</code></pre><p></p>');
-        hidden.value = editor.innerHTML;
-        document.getElementById('codeContent').value = '';
-        document.getElementById('codeModal').classList.remove('active');
-    });
-
     const dropZone = document.getElementById('fileDropZone');
     const fileInput = document.getElementById('fileInput');
     const filesList = document.getElementById('uploadedFilesList');
 
-    dropZone.addEventListener('click', function() { fileInput.click(); });
-    dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
-    dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
-    dropZone.addEventListener('drop', function(e) {
-        e.preventDefault(); dropZone.classList.remove('dragover');
-        handleFiles(e.dataTransfer.files);
-    });
-    fileInput.addEventListener('change', function() { handleFiles(this.files); });
+    if (dropZone) {
+        dropZone.addEventListener('click', function() { fileInput.click(); });
+        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', function() { handleFiles(this.files); });
+    }
 
     function handleFiles(files) {
         Array.from(files).forEach(function(file) {
@@ -1070,10 +1582,14 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
                     item.querySelector('.file-url').innerHTML = '<button class="file-insert-btn" data-url="' + data.url + '" data-name="' + data.filename + '" data-type="' + ftype + '">Insert</button>';
                     item.querySelector('.file-insert-btn').addEventListener('click', function() {
                         const u = this.dataset.url, n = this.dataset.name, t = this.dataset.type;
-                        editor.focus();
-                        if (t === 'images') document.execCommand('insertHTML', false, '<img src="' + u + '" alt="' + n + '">');
-                        else document.execCommand('insertHTML', false, '<a href="' + u + '" target="_blank" rel="noopener">' + n + '</a>');
-                        hidden.value = editor.innerHTML;
+                        if (t === 'images') {
+                            window.ckEditor.execute('imageUpload', { source: u });
+                        } else {
+                            window.ckEditor.model.change(writer => {
+                                const linkElement = writer.createText(n, { linkHref: u });
+                                window.ckEditor.model.insertContent(linkElement);
+                            });
+                        }
                         showToast('File inserted: ' + n, 'success');
                     });
                     showToast('Uploaded: ' + data.filename, 'success');

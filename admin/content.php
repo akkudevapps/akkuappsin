@@ -70,6 +70,21 @@ $recentPosts = $stmt->fetchAll();
     <title>Content Moderation - AkkuApps Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/themes.css?v=<?= time() ?>">
+    <style>
+        @media (max-width: 768px) {
+            .welcome-banner h1 { font-size: 1.3rem !important; }
+            .welcome-banner p { font-size: 0.85rem !important; }
+            .chart-container { padding: 1rem !important; }
+            .chart-container h2 { font-size: 1.1rem !important; }
+            .page-shell { padding: 0.75rem !important; }
+            div[style*="display: flex"] { flex-wrap: wrap !important; }
+            div[style*="gap: 10px"] { flex-direction: column !important; }
+            form[style*="display: inline"] button { width: 100% !important; margin-bottom: 0.5rem !important; }
+        }
+        @media (max-width: 480px) {
+            .welcome-banner h1 { font-size: 1.1rem !important; }
+        }
+    </style>
 </head>
 <body>
     <?php include '../components/admin-header.php'; ?>

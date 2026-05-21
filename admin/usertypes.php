@@ -71,6 +71,24 @@ try {
     <title>User Types - AkkuApps Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/themes.css?v=<?= time() ?>">
+    <style>
+        @media (max-width: 768px) {
+            .welcome-banner h1 { font-size: 1.3rem !important; }
+            .welcome-banner p { font-size: 0.85rem !important; }
+            .chart-container { padding: 1rem !important; }
+            .chart-container h2 { font-size: 1.1rem !important; }
+            .page-shell { padding: 0.75rem !important; }
+            table { font-size: 0.85rem !important; }
+            table th, table td { padding: 10px 8px !important; }
+            .dashboard-container { flex-direction: column !important; }
+            .main-content { padding: 0.75rem !important; }
+        }
+        @media (max-width: 480px) {
+            .welcome-banner h1 { font-size: 1.1rem !important; }
+            table { font-size: 0.75rem !important; }
+            table th, table td { padding: 8px 5px !important; }
+        }
+    </style>
 </head>
 <body>
     <?php include '../components/admin-header.php'; ?>
