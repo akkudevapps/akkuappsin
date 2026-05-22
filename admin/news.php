@@ -339,8 +339,6 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
     <title>News Engine - AkkuApps Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/themes.css?v=<?= time() ?>">
-    <script src="https://cdn.ckeditor.com/ckeditor5/43.0.0/ckeditor5.umd.js"></script>
-    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.0.0/ckeditor5.css">
     <style>
         .news-admin-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, .9fr); gap: 1.5rem; }
         .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
@@ -369,10 +367,44 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
         .status-badge.published { background: rgba(16,185,129,.12); color: #34d399; }
         .status-badge.draft { background: rgba(245,158,11,.12); color: #fbbf24; }
         .status-badge.archived { background: rgba(107,114,128,.12); color: #9ca3af; }
-        .ckeditor-container { border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); overflow: hidden; transition: all .3s; background: var(--bg-input); }
-        .ckeditor-container:hover, .ckeditor-container:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
-        .ck-editor__editable { min-height: 350px !important; max-height: 600px !important; padding: 1rem !important; }
-        @media (max-width:768px) { .ck-editor__editable { min-height: 250px !important; } }
+        .editor-wrapper { border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); overflow: hidden; background: var(--bg-input); }
+        .editor-wrapper:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .editor-toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 8px; background: var(--bg-elevated); border-bottom: 1px solid var(--border-color); align-items: center; }
+        .editor-toolbar-group { display: flex; gap: 1px; align-items: center; }
+        .editor-toolbar-group + .editor-toolbar-group { margin-left: 4px; padding-left: 4px; border-left: 1px solid var(--border-color); }
+        .editor-toolbar-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: none; background: transparent; color: var(--text-secondary); border-radius: 6px; cursor: pointer; font-size: .78rem; transition: all .15s; }
+        .editor-toolbar-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .editor-toolbar-btn.active { background: rgba(99,102,241,.15); color: var(--primary-light); }
+        .editor-toolbar-btn i { font-size: .82rem; }
+        .editor-toolbar-select { padding: 3px 6px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: .78rem; cursor: pointer; height: 28px; }
+        .editor-toolbar-select:focus { outline: none; border-color: var(--primary); }
+        .editor-color-input { width: 26px; height: 26px; padding: 0; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; background: none; }
+        .editor-color-input::-webkit-color-swatch-wrapper { padding: 2px; }
+        .editor-color-input::-webkit-color-swatch { border: none; border-radius: 3px; }
+        .editor-body { min-height: 400px; max-height: 650px; padding: 1rem; overflow-y: auto; background: var(--bg-card); color: var(--text-primary); line-height: 1.7; font-size: .95rem; outline: none; }
+        .editor-body:empty::before { content: attr(data-placeholder); color: var(--text-muted); pointer-events: none; }
+        .editor-body h2 { font-size: 1.5em; font-weight: 700; margin: 1em 0 .5em; }
+        .editor-body h3 { font-size: 1.25em; font-weight: 600; margin: .8em 0 .4em; }
+        .editor-body h4 { font-size: 1.1em; font-weight: 600; margin: .6em 0 .3em; }
+        .editor-body p { margin: .5em 0; }
+        .editor-body blockquote { border-left: 4px solid var(--primary); padding-left: 1em; color: var(--text-secondary); font-style: italic; margin: 1em 0; }
+        .editor-body pre { background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 1em; overflow-x: auto; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: .85rem; line-height: 1.5; }
+        .editor-body pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
+        .editor-body code { background: rgba(99,102,241,.1); padding: 2px 6px; border-radius: 4px; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: .85em; color: var(--primary-light); }
+        .editor-body ul, .editor-body ol { padding-left: 1.5em; margin: .5em 0; }
+        .editor-body ul { list-style: disc; }
+        .editor-body ol { list-style: decimal; }
+        .editor-body img { max-width: 100%; border-radius: 8px; margin: 1em 0; }
+        .editor-body a { color: var(--primary-light); text-decoration: underline; }
+        .editor-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        .editor-body th, .editor-body td { border: 1px solid var(--border-color); padding: 8px 12px; text-align: left; }
+        .editor-body th { background: var(--bg-elevated); font-weight: 600; }
+        .editor-body hr { border: none; border-top: 1px solid var(--border-color); margin: 1.5em 0; }
+        .editor-status-bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 12px; background: var(--bg-elevated); border-top: 1px solid var(--border-color); font-size: .72rem; color: var(--text-muted); }
+        .editor-status-bar .mode-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .03em; }
+        .mode-badge.visual { background: rgba(16,185,129,.12); color: #34d399; }
+        .mode-badge.html { background: rgba(245,158,11,.12); color: #fbbf24; }
+        .editor-html-source { width: 100%; min-height: 400px; max-height: 650px; padding: 1rem; background: #1a1b2e; color: #a8e6cf; border: none; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: .85rem; line-height: 1.6; resize: vertical; outline: none; tab-size: 2; }
         .editor-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 1rem; }
         .editor-modal-overlay.active { display: flex; }
         .editor-modal { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
@@ -435,6 +467,23 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
         .help-panel-header h3 { font-size: 1.1rem; color: var(--text-primary); margin: 0; }
         .help-panel-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); padding: 4px 8px; border-radius: 6px; }
         .help-panel-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .preview-body { padding: 1.5rem; line-height: 1.8; color: var(--text-primary); overflow-y: auto; max-height: 60vh; }
+        .preview-body h2 { font-size: 1.5em; font-weight: 700; margin: 1em 0 .5em; }
+        .preview-body h3 { font-size: 1.25em; font-weight: 600; margin: .8em 0 .4em; }
+        .preview-body h4 { font-size: 1.1em; font-weight: 600; margin: .6em 0 .3em; }
+        .preview-body p { margin: .5em 0; }
+        .preview-body blockquote { border-left: 4px solid var(--primary); padding-left: 1em; color: var(--text-secondary); font-style: italic; margin: 1em 0; }
+        .preview-body pre { background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 1em; overflow-x: auto; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: .85rem; }
+        .preview-body pre code { background: none; padding: 0; }
+        .preview-body code { background: rgba(99,102,241,.1); padding: 2px 6px; border-radius: 4px; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: .85em; color: var(--primary-light); }
+        .preview-body img { max-width: 100%; border-radius: 8px; margin: 1em 0; }
+        .preview-body a { color: var(--primary-light); text-decoration: underline; }
+        .preview-body ul, .preview-body ol { padding-left: 1.5em; margin: .5em 0; }
+        .preview-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        .preview-body th, .preview-body td { border: 1px solid var(--border-color); padding: 8px 12px; text-align: left; }
+        .preview-body th { background: var(--bg-elevated); font-weight: 600; }
+        .preview-body hr { border: none; border-top: 1px solid var(--border-color); margin: 1.5em 0; }
+        .preview-body .language-label { display: inline-block; font-size: .7rem; color: var(--text-muted); background: var(--bg-elevated); padding: 2px 8px; border-radius: 4px; margin-bottom: .5rem; font-family: monospace; }
         .help-panel-content { padding: 1.5rem; }
         .help-section { margin-bottom: 2rem; }
         .help-section h4 { font-size: 0.95rem; color: var(--text-primary); font-weight: 600; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem; }
@@ -565,9 +614,84 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
 
                         <div class="form-group">
                             <label class="form-label">Main Content</label>
-                            <div class="ckeditor-container">
+                            <div class="editor-wrapper">
+                                <div class="editor-toolbar" id="editorToolbar">
+                                    <div class="editor-toolbar-group">
+                                        <select class="editor-toolbar-select" id="formatBlock" title="Format">
+                                            <option value="">Format</option>
+                                            <option value="p">Paragraph</option>
+                                            <option value="h2">Heading 2</option>
+                                            <option value="h3">Heading 3</option>
+                                            <option value="h4">Heading 4</option>
+                                            <option value="pre">Code Block</option>
+                                            <option value="blockquote">Quote</option>
+                                        </select>
+                                    </div>
+                                    <div class="editor-toolbar-group">
+                                        <button class="editor-toolbar-btn" title="Bold" data-cmd="bold"><i class="fas fa-bold"></i></button>
+                                        <button class="editor-toolbar-btn" title="Italic" data-cmd="italic"><i class="fas fa-italic"></i></button>
+                                        <button class="editor-toolbar-btn" title="Underline" data-cmd="underline"><i class="fas fa-underline"></i></button>
+                                        <button class="editor-toolbar-btn" title="Strikethrough" data-cmd="strikeThrough"><i class="fas fa-strikethrough"></i></button>
+                                    </div>
+                                    <div class="editor-toolbar-group">
+                                        <select class="editor-toolbar-select" id="fontFamily" title="Font Family">
+                                            <option value="">Font</option>
+                                            <option value="Arial, sans-serif">Arial</option>
+                                            <option value="Georgia, serif">Georgia</option>
+                                            <option value="Tahoma, sans-serif">Tahoma</option>
+                                            <option value="Times New Roman, serif">Times</option>
+                                            <option value="Verdana, sans-serif">Verdana</option>
+                                            <option value="Courier New, monospace">Courier</option>
+                                            <option value="Noto Sans Tamil, sans-serif">Tamil</option>
+                                        </select>
+                                        <select class="editor-toolbar-select" id="fontSize" title="Font Size">
+                                            <option value="">Size</option>
+                                            <option value="1">XS</option>
+                                            <option value="3">Small</option>
+                                            <option value="5">Medium</option>
+                                            <option value="7">Large</option>
+                                            <option value="9">XL</option>
+                                        </select>
+                                        <button class="editor-toolbar-btn" title="Decrease Font Size" data-cmd="fontSizeDecrease"><i class="fas fa-minus"></i></button>
+                                        <button class="editor-toolbar-btn" title="Increase Font Size" data-cmd="fontSizeIncrease"><i class="fas fa-plus"></i></button>
+                                    </div>
+                                    <div class="editor-toolbar-group">
+                                        <label class="editor-toolbar-btn" title="Text Color" style="cursor:pointer;"><input type="color" id="foreColor" class="editor-color-input" value="#ffffff"></label>
+                                        <label class="editor-toolbar-btn" title="Background Color" style="cursor:pointer;"><input type="color" id="backColor" class="editor-color-input" value="#6366f1"></label>
+                                    </div>
+                                    <div class="editor-toolbar-group">
+                                        <button class="editor-toolbar-btn" title="Bulleted List" data-cmd="insertUnorderedList"><i class="fas fa-list-ul"></i></button>
+                                        <button class="editor-toolbar-btn" title="Numbered List" data-cmd="insertOrderedList"><i class="fas fa-list-ol"></i></button>
+                                        <button class="editor-toolbar-btn" title="Outdent" data-cmd="outdent"><i class="fas fa-outdent"></i></button>
+                                        <button class="editor-toolbar-btn" title="Indent" data-cmd="indent"><i class="fas fa-indent"></i></button>
+                                    </div>
+                                    <div class="editor-toolbar-group">
+                                        <button class="editor-toolbar-btn" title="Insert Image" id="editorInsertImage"><i class="fas fa-image"></i></button>
+                                        <button class="editor-toolbar-btn" title="Insert Link" id="editorInsertLink"><i class="fas fa-link"></i></button>
+                                        <button class="editor-toolbar-btn" title="Insert Code" id="editorInsertCode"><i class="fas fa-code"></i></button>
+                                        <button class="editor-toolbar-btn" title="Horizontal Rule" data-cmd="insertHorizontalRule"><i class="fas fa-minus"></i></button>
+                                    </div>
+                                    <div class="editor-toolbar-group">
+                                        <button class="editor-toolbar-btn" title="Undo" data-cmd="undo"><i class="fas fa-undo"></i></button>
+                                        <button class="editor-toolbar-btn" title="Redo" data-cmd="redo"><i class="fas fa-redo"></i></button>
+                                    </div>
+                                    <div class="editor-toolbar-group" style="margin-left:auto;">
+                                        <button class="editor-toolbar-btn" title="HTML Source" id="toggleHtmlMode"><i class="fas fa-code"></i></button>
+                                        <button class="editor-toolbar-btn" title="Preview" id="previewBtn"><i class="fas fa-eye"></i></button>
+                                    </div>
+                                </div>
+                                <div id="editorVisualWrap">
+                                    <div id="editorBody" class="editor-body" contenteditable="true" data-placeholder="Write your article content here..."><?= newsFieldValue($editorArticle ?? [], 'content') ?></div>
+                                </div>
+                                <div id="editorHtmlWrap" style="display:none;">
+                                    <textarea id="editorHtmlSource" class="editor-html-source" placeholder="<!-- HTML source -->"><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'content')) ?></textarea>
+                                </div>
+                                <div class="editor-status-bar">
+                                    <span>Words: <strong id="wordCount">0</strong></span>
+                                    <span><span class="mode-badge visual" id="modeBadge">Visual</span></span>
+                                    <span>Chars: <strong id="charCount">0</strong></span>
+                                </div>
                                 <textarea id="contentEditor" name="content" required style="display:none;"><?= htmlspecialchars((string) newsFieldValue($editorArticle ?? [], 'content')) ?></textarea>
-                                <div id="ckEditor" style="min-height: 350px;"></div>
                             </div>
                         </div>
 
@@ -800,36 +924,12 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
                     </div>
                     <div class="form-group">
                         <label class="form-label">Link Text</label>
-                        <input class="form-control" type="text" id="linkText" placeholder="Display text">
+                        <input class="form-control" type="text" id="linkText" placeholder="Display text (leave empty to use selected text)">
                     </div>
                 </div>
                 <div class="editor-modal-footer">
                     <button class="btn btn-ghost" data-close="linkModal">Cancel</button>
                     <button class="btn btn-primary" id="linkInsertBtn">Insert</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Image Modal -->
-        <div class="editor-modal-overlay" id="imageModal">
-            <div class="editor-modal">
-                <div class="editor-modal-header">
-                    <h3><i class="fas fa-image"></i> Insert Image</h3>
-                    <button class="editor-modal-close" data-close="imageModal">&times;</button>
-                </div>
-                <div class="editor-modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Image URL</label>
-                        <input class="form-control" type="url" id="imageUrl" placeholder="/uploads/newsroom/.../image.png">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Alt Text</label>
-                        <input class="form-control" type="text" id="imageAlt" placeholder="Image description">
-                    </div>
-                </div>
-                <div class="editor-modal-footer">
-                    <button class="btn btn-ghost" data-close="imageModal">Cancel</button>
-                    <button class="btn btn-primary" id="imageInsertBtn">Insert</button>
                 </div>
             </div>
         </div>
@@ -845,6 +945,7 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
                     <div class="form-group">
                         <label class="form-label">Language</label>
                         <select class="form-control" id="codeLang">
+                            <option value="">Plain Text</option>
                             <option value="python">Python</option>
                             <option value="csharp">C#</option>
                             <option value="css">CSS</option>
@@ -863,6 +964,22 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
                 <div class="editor-modal-footer">
                     <button class="btn btn-ghost" data-close="codeModal">Cancel</button>
                     <button class="btn btn-primary" id="codeInsertBtn">Insert</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div class="editor-modal-overlay" id="previewModal">
+            <div class="editor-modal" style="max-width:720px;">
+                <div class="editor-modal-header">
+                    <h3><i class="fas fa-eye"></i> Article Preview</h3>
+                    <button class="editor-modal-close" data-close="previewModal">&times;</button>
+                </div>
+                <div class="editor-modal-body" style="padding:0;">
+                    <div class="preview-body" id="previewBody"></div>
+                </div>
+                <div class="editor-modal-footer">
+                    <button class="btn btn-primary" data-close="previewModal">Close Preview</button>
                 </div>
             </div>
         </div>
@@ -895,72 +1012,208 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
 </div>
 <script src="../assets/js/theme-switcher.js?v=<?= time() ?>"></script>
 <script>
-(async () => {
-    const { ClassicEditor, Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, Image, ImageUpload, Table, TableToolbar, BlockQuote, CodeBlock, Heading, List, SimpleUploadAdapter, Undo } = window;
-
-    try {
-        const editor = await ClassicEditor.create(
-            document.getElementById('ckEditor'),
-            {
-                plugins: [ Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, Image, ImageUpload, Table, TableToolbar, BlockQuote, CodeBlock, Heading, List, SimpleUploadAdapter, Undo ],
-                toolbar: {
-                    items: [
-                        'heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|',
-                        'bulletedList', 'numberedList', 'outdent', 'indent', '|',
-                        'blockQuote', 'codeBlock', '|', 'link', 'imageUpload', 'insertTable', '|',
-                        'undo', 'redo'
-                    ]
-                },
-                heading: {
-                    options: [
-                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
-                        { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' }
-                    ]
-                },
-                image: {
-                    resizeUnit: '%',
-                    resizeOptions: [
-                        { name: 'resizeImage:original', label: 'Original', value: null },
-                        { name: 'resizeImage:50', label: '50%', value: '50' },
-                        { name: 'resizeImage:75', label: '75%', value: '75' }
-                    ],
-                    toolbar: [ 'imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side', 'resizeImage' ]
-                },
-                table: { contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells' ] },
-                simpleUpload: {
-                    uploadUrl: '?action=upload_file&folder=<?= htmlspecialchars((string) ($editorFolder ?: 'temp')) ?>',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                }
-            }
-        );
-
-        const contentEditor = document.getElementById('contentEditor');
-        const form = contentEditor.closest('form');
-        if (form) {
-            form.addEventListener('submit', function() {
-                contentEditor.value = editor.getData();
-            });
-        }
-
-        window.ckEditor = editor;
-    } catch(err) {
-        console.error('CKEditor initialization failed:', err);
-    }
-})();
-</script>
-<script>
 (function() {
-    const folder = '<?= htmlspecialchars((string) ($editorFolder ?: ($editorArticle ? ($selectedArticle['article_folder'] ?? '') : ''))) ?>';
+    'use strict';
 
+    // --- Custom Editor ---
+    const editorBody = document.getElementById('editorBody');
+    const htmlSource = document.getElementById('editorHtmlSource');
+    const htmlWrap = document.getElementById('editorHtmlWrap');
+    const visualWrap = document.getElementById('editorVisualWrap');
+    const hiddenTextarea = document.getElementById('contentEditor');
+    const toggleHtmlBtn = document.getElementById('toggleHtmlMode');
+    const modeBadge = document.getElementById('modeBadge');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewBody = document.getElementById('previewBody');
+    let isHtmlMode = false;
+
+    // Modal helpers
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // Insert HTML at cursor in contentEditable
+    function insertHtml(html) {
+        editorBody.focus();
+        if (isHtmlMode) {
+            htmlSource.value += html;
+            return;
+        }
+        document.execCommand('insertHTML', false, html);
+    }
+
+    // Update word/char counts
+    function updateCounts() {
+        const text = isHtmlMode ? htmlSource.value : (editorBody.innerText || '');
+        const html = isHtmlMode ? htmlSource.value : editorBody.innerHTML;
+        document.getElementById('wordCount').textContent = text.trim() ? text.trim().split(/\s+/).length : 0;
+        document.getElementById('charCount').textContent = text.length;
+        hiddenTextarea.value = html;
+    }
+
+    // Format block handler
+    document.getElementById('formatBlock').addEventListener('change', function() {
+        const val = this.value;
+        if (!val) return;
+        if (val === 'pre') {
+            document.execCommand('insertHTML', false, '<pre><code>' + (window.getSelection().toString() || '') + '</code></pre>');
+        } else if (val === 'blockquote') {
+            document.execCommand('formatBlock', false, 'blockquote');
+        } else {
+            document.execCommand('formatBlock', false, '<' + val + '>');
+        }
+        this.value = '';
+        updateCounts();
+    });
+
+    // Toolbar command buttons
+    document.querySelectorAll('.editor-toolbar-btn[data-cmd]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const cmd = this.dataset.cmd;
+            if (isHtmlMode) return;
+            if (cmd === 'fontSizeIncrease') {
+                document.execCommand('increaseFontSize');
+            } else if (cmd === 'fontSizeDecrease') {
+                document.execCommand('decreaseFontSize');
+            } else {
+                document.execCommand(cmd);
+            }
+            editorBody.focus();
+            updateCounts();
+        });
+    });
+
+    // Font family
+    document.getElementById('fontFamily').addEventListener('change', function() {
+        if (isHtmlMode) return;
+        document.execCommand('fontName', false, this.value);
+        editorBody.focus();
+        this.value = '';
+    });
+
+    // Font size
+    document.getElementById('fontSize').addEventListener('change', function() {
+        if (isHtmlMode) return;
+        document.execCommand('fontSize', false, this.value);
+        editorBody.focus();
+        this.value = '';
+    });
+
+    // Text color
+    document.getElementById('foreColor').addEventListener('input', function() {
+        if (isHtmlMode) return;
+        document.execCommand('foreColor', false, this.value);
+        editorBody.focus();
+    });
+
+    // Background color
+    document.getElementById('backColor').addEventListener('input', function() {
+        if (isHtmlMode) return;
+        document.execCommand('hiliteColor', false, this.value);
+        editorBody.focus();
+    });
+
+    // Help panel
     window.toggleHelpPanel = function() {
         const panel = document.getElementById('helpPanel');
         const toggle = document.getElementById('helpToggle');
         panel.classList.toggle('open');
         toggle.classList.toggle('hidden');
     };
+
+    // Mute non-editor keys in html mode
+    editorBody.addEventListener('keyup', updateCounts);
+    htmlSource.addEventListener('input', updateCounts);
+
+    // Visual / HTML Source toggle
+    toggleHtmlBtn.addEventListener('click', function() {
+        isHtmlMode = !isHtmlMode;
+        if (isHtmlMode) {
+            htmlSource.value = editorBody.innerHTML;
+            visualWrap.style.display = 'none';
+            htmlWrap.style.display = '';
+            modeBadge.textContent = 'HTML';
+            modeBadge.className = 'mode-badge html';
+        } else {
+            editorBody.innerHTML = htmlSource.value;
+            visualWrap.style.display = '';
+            htmlWrap.style.display = 'none';
+            modeBadge.textContent = 'Visual';
+            modeBadge.className = 'mode-badge visual';
+        }
+        updateCounts();
+    });
+
+    // Insert Link handler
+    document.getElementById('editorInsertLink').addEventListener('click', function() {
+        if (isHtmlMode) return;
+        const sel = window.getSelection().toString();
+        document.getElementById('linkText').value = sel;
+        document.getElementById('linkUrl').value = '';
+        openModal('linkModal');
+        setTimeout(function() { document.getElementById('linkUrl').focus(); }, 100);
+    });
+
+    document.getElementById('linkInsertBtn').addEventListener('click', function() {
+        const url = document.getElementById('linkUrl').value.trim();
+        const text = document.getElementById('linkText').value.trim();
+        if (!url) { showToast('Please enter a URL.', 'error'); return; }
+        if (text) {
+            insertHtml('<a href="' + url.replace(/"/g,'&quot;') + '" target="_blank">' + text.replace(/</g,'&lt;') + '</a>');
+        } else {
+            document.execCommand('createLink', false, url);
+        }
+        closeModal('linkModal');
+        updateCounts();
+    });
+
+    // Insert Code Block handler
+    document.getElementById('editorInsertCode').addEventListener('click', function() {
+        if (isHtmlMode) return;
+        document.getElementById('codeContent').value = window.getSelection().toString();
+        document.getElementById('codeLang').value = '';
+        openModal('codeModal');
+        setTimeout(function() { document.getElementById('codeContent').focus(); }, 100);
+    });
+
+    document.getElementById('codeInsertBtn').addEventListener('click', function() {
+        const code = document.getElementById('codeContent').value;
+        const lang = document.getElementById('codeLang').value;
+        if (!code) { showToast('Please enter code.', 'error'); return; }
+        const langAttr = lang ? ' class="language-' + lang + '"' : '';
+        const label = lang ? '<div class="language-label">' + lang + '</div>' : '';
+        insertHtml('<pre><code' + langAttr + '>' + code.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>');
+        closeModal('codeModal');
+        updateCounts();
+    });
+
+    // Insert Image -> open file upload modal
+    document.getElementById('editorInsertImage').addEventListener('click', function() {
+        if (isHtmlMode) return;
+        openModal('fileUploadModal');
+    });
+
+    // Preview handler
+    previewBtn.addEventListener('click', function() {
+        const html = isHtmlMode ? htmlSource.value : editorBody.innerHTML;
+        previewBody.innerHTML = html;
+        openModal('previewModal');
+    });
+
+    // Form submit sync
+    const form = hiddenTextarea.closest('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (isHtmlMode) {
+                editorBody.innerHTML = htmlSource.value;
+            }
+            hiddenTextarea.value = isHtmlMode ? htmlSource.value : editorBody.innerHTML;
+        });
+    }
+
+    // Initial count
+    updateCounts();
+
+    const folder = '<?= htmlspecialchars((string) ($editorFolder ?: ($editorArticle ? ($selectedArticle['article_folder'] ?? '') : ''))) ?>';
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -1020,13 +1273,15 @@ $editorType = $selectedArticle ? akkuNewsArticleType($selectedArticle) : 'news';
                     item.querySelector('.file-url').innerHTML = '<button class="file-insert-btn" data-url="' + data.url + '" data-name="' + data.filename + '" data-type="' + ftype + '">Insert</button>';
                     item.querySelector('.file-insert-btn').addEventListener('click', function() {
                         const u = this.dataset.url, n = this.dataset.name, t = this.dataset.type;
-                        if (t === 'images') {
-                            window.ckEditor.execute('imageUpload', { source: u });
-                        } else {
-                            window.ckEditor.model.change(writer => {
-                                const linkElement = writer.createText(n, { linkHref: u });
-                                window.ckEditor.model.insertContent(linkElement);
-                            });
+                        const editorBody = document.getElementById('editorBody');
+                        if (editorBody) {
+                            editorBody.focus();
+                            if (t === 'images') {
+                                document.execCommand('insertHTML', false, '<img src="' + u.replace(/"/g,'&quot;') + '" alt="' + n.replace(/"/g,'&quot;') + '" style="max-width:100%">');
+                            } else {
+                                document.execCommand('insertHTML', false, '<a href="' + u.replace(/"/g,'&quot;') + '" target="_blank">' + n.replace(/"/g,'&quot;') + '</a>');
+                            }
+                            updateCounts();
                         }
                         showToast('File inserted: ' + n, 'success');
                     });

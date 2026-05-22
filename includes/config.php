@@ -24,6 +24,7 @@ define('DB_PASS', 'akkuapps_maui');
 // ---------------------------------------------------
 // PDO connection
 try {
+    global $pdo;
     $pdo = new PDO(
         "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
         DB_USER,
