@@ -12,7 +12,7 @@ $error = '';
 $promoBlocks = akkuNewsPromoBlocks();
 
 // Get user location and language for ad targeting
-$userLocation = akkuAdGetUserLocationAndLanguage();
+$userLocation = akkuAdGetUserLocationAndLanguage($pdo);
 $userRegion = $userLocation['region'] ?? null;
 $userLanguage = $userLocation['language'] ?? 'en';
 
